@@ -1,0 +1,56 @@
+cabal-version: 2.4
+name: blarney-mmreg
+version: 0.1.0.0
+
+flag enable-namer-plugin
+  description: Enable namer plugin
+  manual: True
+  default: False
+
+common blarney-mmreg-common
+  default-language: GHC2021
+  default-extensions:
+    BlockArguments
+    DataKinds
+    DeriveAnyClass
+    DerivingStrategies
+    DuplicateRecordFields
+    MultiWayIf
+    NoImplicitPrelude
+    NoStarIsType
+    OverloadedRecordDot
+    OverloadedLabels
+    PartialTypeSignatures
+    RebindableSyntax
+    RecordWildCards
+    RecursiveDo
+    TypeFamilies
+  ghc-options:
+    -Wno-partial-type-signatures
+  if flag(enable-namer-plugin)
+    build-depends:
+      blarney-plugins-namer
+    ghc-options:
+      -fplugin BlarneyPlugins.Namer
+  build-depends:
+      base
+    , blarney
+    , blarney-axi4
+
+library
+  import: blarney-mmreg-common
+  hs-source-dirs: src
+  exposed-modules: Blarney.MMReg
+
+executable blarney-mmreg-gen
+  import: blarney-mmreg-common
+  main-is: Main.hs
+  hs-source-dirs: gen
+  build-depends: blarney-mmreg
+
+test-suite blarney-mmreg-tests
+  import: blarney-mmreg-common
+  type: exitcode-stdio-1.0
+  main-is: Tests.hs
+  hs-source-dirs: tests
+  build-depends: blarney-mmreg

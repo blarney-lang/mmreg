@@ -28,16 +28,16 @@ test`.
 
 The library comprises:
 
-  * [MMReg.hs](src/Blarney/MMReg.hs): A single Haskell source file
+  * [MMReg.hs](src/Blarney/MMReg.hs): Haskell source file
     implementing the MMReg component.
 
-  * [Main.hs](gen/Main.hs): A Verilog generator for a MMReg with
+  * [Main.hs](gen/Main.hs): Verilog generator for an MMReg with
     a default configuration.
 
-  * [Tests.hs](tests/Tests.hs): A simple test bench for the MMReg.
+  * [Tests.hs](tests/Tests.hs): Simple test bench for the MMReg.
 
-  * [blarney-mmreg.cabal](blarney-mmreg.cabal): A cabal package file,
-    listing dependencies, exposed modules, compiler flags and so on.
+  * [blarney-mmreg.cabal](blarney-mmreg.cabal): Cabal package file,
+    listing dependencies, exposed modules, compiler flags etc.
 
-  * [cabal.project](blarney-mmreg.cabal): A cabal project file, telling
+  * [cabal.project](blarney-mmreg.cabal): Cabal project file, telling
     cabal where to find the dependencies (github in our case).

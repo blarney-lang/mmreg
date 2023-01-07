@@ -11,7 +11,7 @@ import Blarney.SourceSink
 import Blarney.AXI4
 import Blarney.AXI4.Utils.BufferShim
 
--- A MMReg is a memory-mapped register of a desired width
+-- An MMReg is a memory-mapped register of a desired width
 makeMMReg :: forall params. _ => Module (AXI4_Subordinate params)
 makeMMReg = do
   -- Declare a shim to implement the interface in a simple manner
@@ -21,82 +21,70 @@ makeMMReg = do
   dataRegs :: V.Vec (2 ^ AddrWidth params) (Reg (Bit 8)) <-
     V.replicateM (makeReg dontCare)
 
-  -- Read-related registers
-  arid    <- makeReg dontCare
-  araddr  <- makeReg dontCare
-  arsize  <- makeReg dontCare
-  arcount <- makeReg dontCare
+  -- Read/write offset (bytes)
+  roffset <- makeReg 0
+  woffset <- makeReg 0
 
-  -- Write-related registers
-  awid   <- makeReg dontCare
-  awaddr <- makeReg dontCare
-  awsize <- makeReg dontCare
-
-  -- Read/write in progress?
-  read  <- makeReg false
-  write <- makeReg false
+  -- Read count
+  rcount <- makeReg 0
 
   always do
-    -- Receive write request
-    when (inv write.val .&&. shim.manager.aw.canPeek) do
+    -- Handle writes
+    when (shim.manager.aw.canPeek .&&.
+            shim.manager.w.canPeek .&&.
+              shim.manager.b.canPut) do
+      -- Shorthands
       let awflit = shim.manager.aw.peek
-      awid <== awflit.awid
-      awaddr <== awflit.awaddr
-      awsize <== (1 :: Bit (AddrWidth params)) .<<. awflit.awsize
-      shim.manager.aw.consume
-      write <== true
-
-    -- Receive write data
-    when (write.val .&&. shim.manager.w.canPeek) do
       let wflit = shim.manager.w.peek
-      when shim.manager.b.canPut do
-        shim.manager.w.consume
-        -- Issue write response at end of burst
-        when wflit.wlast do
-          write <== false
-          shim.manager.b.put
-            AXI4_BFlit {
-              bid = awid.val
-            , bresp = resp_okay
-            , buser = dontCare
-            }
-        -- Update data registers
-        sequence_
-          [ when (fromInteger i .>=. awaddr.val .&&.
-                  fromInteger i .<. awaddr.val + awsize.val) do
-              let j = fromInteger i - awaddr.val
-              when (wflit.wstrb ! j) do
-                r <== (wflit.wdata ! j)
-          | (r, i) <- zip (V.toList dataRegs) [0..] ]
-        -- Increment address
-        awaddr <== awaddr.val + awsize.val
+      let size = (1 :: Bit (AddrWidth params)) .<<. awflit.awsize
+      -- Update data registers
+      let addr = awflit.awaddr + woffset.val
+      sequence_
+        [ when (fromInteger i .>=. addr .&&.
+                fromInteger i .<. addr + size) do
+            let j = fromInteger i - addr
+            when (wflit.wstrb ! j) do
+              r <== (wflit.wdata ! j)
+        | (r, i) <- zip (V.toList dataRegs) [0..] ]
+      -- Consume write
+      shim.manager.w.consume
+      -- Increment write offset
+      woffset <== if wflit.wlast then 0 else woffset.val + size
+      -- Issue write response at end of burst
+      when wflit.wlast do
+        shim.manager.b.put
+          AXI4_BFlit {
+            bid = awflit.awid
+          , bresp = resp_okay
+          , buser = dontCare
+          }
+        shim.manager.aw.consume
 
-    -- Receive read request
-    when (inv read.val .&&. shim.manager.ar.canPeek) do
+    -- Handle reads
+    when (shim.manager.ar.canPeek .&&. shim.manager.r.canPut) do
+      -- Shorthands
       let arflit = shim.manager.ar.peek
-      arcount <== arflit.arlen
-      arsize <== (1 :: Bit (AddrWidth params)) .<<. arflit.arsize
-      araddr <== arflit.araddr
-      arid <== arflit.arid
-      shim.manager.ar.consume
-      read <== true
-
-    -- Issue read response
-    when (read.val .&&. shim.manager.r.canPut) do
+      let size = (1 :: Bit (AddrWidth params)) .<<. arflit.arsize
+      let addr = arflit.araddr + roffset.val
+      let done = rcount.val .==. arflit.arlen
       -- Respond with requested bytes
-      let getByte i = (dataRegs ! (araddr.val + fromIntegral i)).val
+      let getByte i = (dataRegs ! (addr + fromIntegral i)).val
       shim.manager.r.put
         AXI4_RFlit {
-          rid = arid.val
+          rid = arflit.arid
         , rdata = V.map getByte V.genVec
         , rresp = resp_okay
-        , rlast = arcount.val .==. 0
+        , rlast = done
         , ruser = dontCare
         }
-      araddr <== araddr.val + arsize.val
-      arcount <== arcount.val - 1
       -- Finished reading?
-      when (arcount.val .==. 0) do
-        read <== false
+      if done
+        then do
+          shim.manager.ar.consume
+          rcount <== 0
+          roffset <== 0
+        else do
+          rcount <== rcount.val + 1
+          roffset <== roffset.val + size
 
   return shim.subordinate

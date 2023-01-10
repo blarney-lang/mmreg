@@ -1,4 +1,4 @@
-packages: .
+packages: . /home/mn416/work/axi4/
 
 source-repository-package
   type: git
@@ -6,8 +6,8 @@ source-repository-package
   tag: master
   subdir: . Haskell/BlarneyPlugins/Namer/
 
-source-repository-package
-  type: git
-  location: https://github.com/blarney-lang/axi4.git
-  tag: master
-  subdir: .
+--source-repository-package
+--  type: git
+--  location: https://github.com/blarney-lang/axi4.git
+--  tag: master
+--  subdir: .

@@ -39,5 +39,5 @@ The library comprises:
   * [blarney-mmreg.cabal](blarney-mmreg.cabal): Cabal package file,
     listing dependencies, exposed modules, compiler flags etc.
 
-  * [cabal.project](blarney-mmreg.cabal): Cabal project file, telling
+  * [cabal.project](cabal.project): Cabal project file, telling
     cabal where to find the dependencies (github in our case).

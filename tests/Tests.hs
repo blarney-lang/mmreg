@@ -16,13 +16,13 @@ import System.Exit
 makeMMRegTestBench :: Module ()
 makeMMRegTestBench = do
   -- 64-bit MMReg with 32-bit data bus
-  mmreg :: AXI4_Subordinate (AXI4_Params 0 3 2 0 0 0 0 0) <- makeMMReg
+  mmreg :: MMReg (AXI4_Params 0 3 2 0 0 0 0 0) <- makeMMReg
 
   runStmt do
     -- Issue write request for 6 bytes starting at address 1
-    wait mmreg.aw.canPut 
+    wait mmreg.axi.aw.canPut 
     action do
-      mmreg.aw.put
+      mmreg.axi.aw.put
         AXI4_AWFlit {
           awid     = dontCare
         , awaddr   = 1
@@ -39,9 +39,9 @@ makeMMRegTestBench = do
 
     -- Write 6 bytes
     forM_ [0..2] \i -> do
-      wait mmreg.w.canPut
+      wait mmreg.axi.w.canPut
       action do
-        mmreg.w.put
+        mmreg.axi.w.put
           AXI4_WFlit {
             wdata = V.fromList (map fromInteger [2*i, 2*i+1, 0, 0])
           , wstrb = fromBitList [1, 1, 0, 0]
@@ -50,14 +50,14 @@ makeMMRegTestBench = do
           }
 
     -- Wait for write response
-    wait mmreg.b.canPeek
+    wait mmreg.axi.b.canPeek
     action do
-      mmreg.b.consume
+      mmreg.axi.b.consume
 
     -- Issue read request for 4 bytes starting at address 3
-    wait mmreg.ar.canPut
+    wait mmreg.axi.ar.canPut
     action do
-      mmreg.ar.put
+      mmreg.axi.ar.put
         AXI4_ARFlit {
           arid     = dontCare
         , araddr   = 3
@@ -74,10 +74,10 @@ makeMMRegTestBench = do
 
     -- Read 4 bytes
     forM_ [0..3] \i -> do
-      wait mmreg.r.canPeek
+      wait mmreg.axi.r.canPeek
       action do
-        display (V.head mmreg.r.peek.rdata)
-        mmreg.r.consume
+        display (V.head mmreg.axi.r.peek.rdata)
+        mmreg.axi.r.consume
 
     action do
       finish

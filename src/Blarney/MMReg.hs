@@ -11,8 +11,17 @@ import Blarney.SourceSink
 import Blarney.AXI4
 import Blarney.AXI4.Utils.BufferShim
 
+-- MMReg interface
+data MMReg params =
+  MMReg {
+    axi :: AXI4_Subordinate params
+    -- ^ AXI4 interface
+  , bytes :: V.Vec (2 ^ AddrWidth params) (Bit 8)
+    -- ^ Current register value
+  }
+
 -- An MMReg is a memory-mapped register of a desired width
-makeMMReg :: forall params. _ => Module (AXI4_Subordinate params)
+makeMMReg :: forall params. _ => Module (MMReg params)
 makeMMReg = do
   -- Declare a shim to implement the interface in a simple manner
   shim <- makeAXI4BufferShim (makePipelineQueue 1)
@@ -87,4 +96,8 @@ makeMMReg = do
           rcount <== rcount.val + 1
           roffset <== roffset.val + size
 
-  return shim.subordinate
+  return
+    MMReg {
+      axi = shim.subordinate
+    , bytes = V.map (.val) dataRegs
+    }

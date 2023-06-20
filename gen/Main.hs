@@ -7,4 +7,8 @@ type MMReg_Params = AXI4_Params 0 3 2 0 0 0 0 0
 
 -- Main
 main :: IO ()
-main = writeVerilogModule (makeMMReg @MMReg_Params) "MMReg" "./"
+main = writeVerilogModule makeMMRegAXI4 "MMReg" "./"
+  where
+    makeMMRegAXI4 = do
+      r <- makeMMReg @MMReg_Params
+      return r.axi

@@ -11,4 +11,8 @@ main = writeVerilogModule makeMMRegAXI4 "MMReg" "./"
   where
     makeMMRegAXI4 = do
       r <- makeMMReg @MMReg_Params
+             MMRegConfig {
+               enableReads = True
+             , enableWrites = True
+             }
       return r.axi

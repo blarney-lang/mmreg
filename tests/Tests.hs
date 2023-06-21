@@ -15,8 +15,13 @@ import System.Exit
 
 makeMMRegTestBench :: Module ()
 makeMMRegTestBench = do
-  -- 64-bit MMReg with 32-bit data bus
-  mmreg :: MMReg (AXI4_Params 0 3 2 0 0 0 0 0) <- makeMMReg
+  -- 64-bit MMReg with 32-bit read+write data bus
+  mmreg :: MMReg (AXI4_Params 0 3 2 0 0 0 0 0) <-
+    makeMMReg
+      MMRegConfig {
+        enableReads = True
+      , enableWrites = True
+      }
 
   runStmt do
     -- Issue write request for 6 bytes starting at address 1

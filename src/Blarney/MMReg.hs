@@ -14,10 +14,10 @@ import Blarney.AXI4.Utils.BufferShim
 -- MMReg interface
 data MMReg params =
   MMReg {
+    -- Memory-mapped AXI4 interface
     axi :: AXI4_Subordinate params
-    -- ^ AXI4 interface
-  , bytes :: V.Vec (2 ^ AddrWidth params) (Bit 8)
-    -- ^ Current register value
+    -- Direct register access
+  , bytes :: V.Vec (2 ^ AddrWidth params) (Reg (Bit 8))
   }
 
 -- An MMReg is a memory-mapped register of a desired width
@@ -99,5 +99,5 @@ makeMMReg = do
   return
     MMReg {
       axi = shim.subordinate
-    , bytes = V.map (.val) dataRegs
+    , bytes = dataRegs
     }
